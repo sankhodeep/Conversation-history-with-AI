@@ -25,12 +25,15 @@ def get_formatted_prompt(history):
     
     convo_history = "\n".join(
         f"{msg['role']}: {msg['content']}" 
-        for msg in history[:-1]
+        for msg in history
     )
-    current_msg = history[-1]["content"] if history else ""
+    
+    current_msg = st.session_state.get("current_saved_message", "")
+    system_prompt = st.session_state.get("system_prompt", 
+        "Hello, I've attached our past conversation history below for context.")
     
     return f"""
-System: Hello, I've attached our past conversation history below for context.
+System: {system_prompt}
 
 Past Conversation History:
 {convo_history}
@@ -101,6 +104,19 @@ def save_and_clear():
     st.session_state.user_input = ""
     st.session_state.ai_response = ""
 
+# System Prompt
+with st.form("system_prompt_form"):
+    system_prompt = st.text_area(
+        "⚙️ System Prompt",
+        value=st.session_state.get("system_prompt", 
+            "Hello, I've attached our past conversation history below for context."),
+        key="system_prompt_input",
+        height=100
+    )
+    if st.form_submit_button("💾 Save System Prompt"):
+        st.session_state.system_prompt = st.session_state.system_prompt_input
+        st.toast("System prompt saved!", icon="💾")
+
 # Input fields
 with st.form("chat_form"):
     user_msg = st.text_area("💬 Your Message", key="user_input")
@@ -122,6 +138,17 @@ with st.expander("🔍 Live Prompt Preview", expanded=True):
         pyperclip.copy(preview)
         st.toast("Copied to clipboard!", icon="✅")
 
+# ===== CURRENT MESSAGE HANDLING =====
+st.subheader("Current Message")
+current_msg_input = st.text_area(
+    "✏️ Enter Current Message", 
+    key="current_message_input",
+    height=100
+)
+if st.button("💾 Save Current Message"):
+    st.session_state.current_saved_message = st.session_state.current_message_input
+    st.toast("Current message saved!", icon="💾")
+
 # ===== SESSION ACTIONS =====
 st.caption(f"Current Session: {current_session}")
 if st.button("🔄 Rename Session"):
@@ -130,3 +157,4 @@ if st.button("🔄 Rename Session"):
         st.session_state.sessions[new_name] = st.session_state.sessions.pop(current_session)
         st.session_state.current_session = new_name
         st.rerun()
+
